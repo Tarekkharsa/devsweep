@@ -227,7 +227,8 @@ func detectCPUHogs(procs []scanner.ProcessInfo, cfg *config.Config) []Issue {
 	return issues
 }
 
-// detectMemoryBloat finds processes using excessive RAM.
+// detectMemoryBloat finds processes using excessive RAM while idle.
+// Only flags orphaned processes or processes NOT in an active session.
 func detectMemoryBloat(procs []scanner.ProcessInfo, cfg *config.Config) []Issue {
 	var issues []Issue
 
@@ -238,14 +239,31 @@ func detectMemoryBloat(procs []scanner.ProcessInfo, cfg *config.Config) []Issue 
 
 		threshold := memoryThresholdForProcess(p, cfg)
 		if p.MemoryMB > threshold {
+			if p.SessionIsActive {
+				continue
+			}
+
+			isIdle := p.CPUPercent < 5.0
+			isOrphan := p.IsOrphan
+
+			suggestion := "Possible memory leak"
+			confidence := ConfidenceLow
+			if isOrphan {
+				suggestion = "Orphaned process with high memory"
+				confidence = ConfidenceMedium
+			} else if isIdle {
+				suggestion = "Idle process with high memory"
+				confidence = ConfidenceMedium
+			}
+
 			issues = append(issues, Issue{
 				Type:        IssueMemoryBloat,
 				Description: fmt.Sprintf("%s using %.0f MB RAM", p.Tool, p.MemoryMB),
 				Processes:   []scanner.ProcessInfo{p},
 				TotalCPU:    p.CPUPercent,
 				TotalMemMB:  p.MemoryMB,
-				Suggestion:  "Possible memory leak",
-				Confidence:  ConfidenceLow,
+				Suggestion:  suggestion,
+				Confidence:  confidence,
 			})
 		}
 	}

@@ -24,19 +24,22 @@ const (
 
 // ProcessInfo holds enriched information about a running process.
 type ProcessInfo struct {
-	PID        int32
-	PPID       int32
-	Name       string
-	Cmdline    string
-	Category   Category
-	Tool       string // e.g., "Vite", "Next.js", "mcp-remote"
-	CPUPercent float64
-	MemoryMB   float64
-	Port       int
-	Cwd        string
-	StartTime  time.Time
-	Uptime     time.Duration
-	IsOrphan   bool
+	PID             int32
+	PPID            int32
+	Name            string
+	Cmdline         string
+	Category        Category
+	Tool            string // e.g., "Vite", "Next.js", "mcp-remote"
+	CPUPercent      float64
+	MemoryMB        float64
+	Port            int
+	Cwd             string
+	StartTime       time.Time
+	Uptime          time.Duration
+	IsOrphan        bool
+	SessionRootPID  int32  // PID of the session root (e.g., opencode)
+	SessionRootTool string // Tool name of session root
+	SessionIsActive bool   // True if session root is alive and has recent activity
 }
 
 // ScanAll discovers all running processes and returns those relevant to developers.
@@ -47,6 +50,11 @@ func ScanAll() ([]ProcessInfo, error) {
 	}
 
 	myPID := int32(os.Getpid())
+	pidMap := make(map[int32]*process.Process)
+	for _, p := range procs {
+		pidMap[p.Pid] = p
+	}
+
 	var results []ProcessInfo
 
 	for _, p := range procs {
@@ -54,7 +62,7 @@ func ScanAll() ([]ProcessInfo, error) {
 			continue
 		}
 
-		info, relevant := inspectProcess(p)
+		info, relevant := inspectProcess(p, pidMap)
 		if relevant {
 			results = append(results, info)
 		}
@@ -63,7 +71,7 @@ func ScanAll() ([]ProcessInfo, error) {
 	return results, nil
 }
 
-func inspectProcess(p *process.Process) (ProcessInfo, bool) {
+func inspectProcess(p *process.Process, pidMap map[int32]*process.Process) (ProcessInfo, bool) {
 	name, err := p.Name()
 	if err != nil {
 		return ProcessInfo{}, false
@@ -105,20 +113,25 @@ func inspectProcess(p *process.Process) (ProcessInfo, bool) {
 
 	port := resolvePort(p)
 
+	sessionRootPID, sessionRootTool, sessionIsActive := findSessionRoot(p, pidMap)
+
 	info := ProcessInfo{
-		PID:        p.Pid,
-		PPID:       ppid,
-		Name:       name,
-		Cmdline:    cmdline,
-		Category:   cat,
-		Tool:       tool,
-		CPUPercent: cpuPct,
-		MemoryMB:   memMB,
-		Port:       port,
-		Cwd:        cwd,
-		StartTime:  startTime,
-		Uptime:     uptime,
-		IsOrphan:   isOrphan,
+		PID:             p.Pid,
+		PPID:            ppid,
+		Name:            name,
+		Cmdline:         cmdline,
+		Category:        cat,
+		Tool:            tool,
+		CPUPercent:      cpuPct,
+		MemoryMB:        memMB,
+		Port:            port,
+		Cwd:             cwd,
+		StartTime:       startTime,
+		Uptime:          uptime,
+		IsOrphan:        isOrphan,
+		SessionRootPID:  sessionRootPID,
+		SessionRootTool: sessionRootTool,
+		SessionIsActive: sessionIsActive,
 	}
 
 	return info, true
@@ -140,6 +153,65 @@ func FormatUptime(d time.Duration) string {
 	days := int(d.Hours()) / 24
 	h := int(d.Hours()) % 24
 	return fmt.Sprintf("%dd%dh", days, h)
+}
+
+var sessionInitiators = map[string]bool{
+	"bash":      true,
+	"zsh":       true,
+	"fish":      true,
+	"sh":        true,
+	"ksh":       true,
+	"tmux":      true,
+	"screen":    true,
+	"iterm2":    true,
+	"Terminal":  true,
+	"alacritty": true,
+	"kitty":     true,
+	"opencode":  true,
+	"cursor":    true,
+	"code":      true,
+	"vscode":    true,
+	"claude":    true,
+	"docker":    true,
+}
+
+func findSessionRoot(proc *process.Process, pidMap map[int32]*process.Process) (rootPID int32, rootTool string, isActive bool) {
+	current := proc
+	visited := make(map[int32]bool)
+	maxDepth := 20
+
+	for i := 0; i < maxDepth; i++ {
+		ppid, err := current.Ppid()
+		if err != nil || ppid <= 1 {
+			name, _ := current.Name()
+			lowerName := strings.ToLower(name)
+			if sessionInitiators[lowerName] || ppid == 1 {
+				rootPID = current.Pid
+				rootTool = name
+				break
+			}
+			return 0, "", false
+		}
+
+		if visited[ppid] {
+			break
+		}
+		visited[ppid] = true
+
+		if parent, ok := pidMap[ppid]; ok {
+			current = parent
+		} else {
+			break
+		}
+	}
+
+	if rootPID == 0 {
+		rootPID = current.Pid
+		rootTool, _ = current.Name()
+	}
+
+	_, isAlive := pidMap[rootPID]
+	return rootPID, rootTool, isAlive
 }
 
 // GroupByCategory groups processes by their category.
