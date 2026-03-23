@@ -38,16 +38,17 @@ changelog:
       - '^docs:'
       - '^test:'
 
-brews:
-  - name: devsweep
-    repository:
-      owner: TarekKharsa
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    homepage: "https://github.com/TarekKharsa/devsweep"
-    description: "Smart process cleanup for developers"
-    license: "MIT"
-    install: |
-      bin.install "devsweep"
-    test: |
-      system "#{bin}/devsweep", "version"
+# Homebrew disabled - uncomment and set HOMEBREW_TAP_GITHUB_TOKEN to enable
+# brews:
+#   - name: devsweep
+#     repository:
+#       owner: TarekKharsa
+#       name: homebrew-tap
+#       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+#     homepage: "https://github.com/TarekKharsa/devsweep"
+#     description: "Smart process cleanup for developers"
+#     license: "MIT"
+#     install: |
+#       bin.install "devsweep"
+#     test: |
+#       system "#{bin}/devsweep", "version"
