@@ -228,14 +228,21 @@ func cmdClean() {
 		keepTargets, killTargets := cleaner.ResolveKillTargets(issue)
 
 		var safeTargets []scanner.ProcessInfo
+		var protectedSkipped int
 		for _, t := range killTargets {
-			if !cleaner.IsProtected(t, cfg) {
-				safeTargets = append(safeTargets, t)
+			if cleaner.IsProtected(t, cfg) {
+				protectedSkipped++
+				continue
 			}
+			safeTargets = append(safeTargets, t)
 		}
 
 		action := cleanAction{Issue: issue, Keep: keepTargets, Kill: safeTargets}
 		result.Actions = append(result.Actions, action)
+
+		if !jsonOut {
+			ui.PrintCleanPlan(issue, keepTargets, safeTargets, protectedSkipped)
+		}
 
 		if len(safeTargets) == 0 || dryRun {
 			continue

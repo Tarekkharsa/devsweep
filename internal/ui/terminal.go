@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -27,7 +28,7 @@ func PrintBanner() {
 }
 
 // PrintScanResults displays scanned processes grouped by category.
-func PrintScanResults(procs []scanner.ProcessInfo) {
+func PrintScanResults(procs []scanner.ProcessInfo, flagged map[int32]rules.IssueType, hiddenRuntimes int, includeRuntimes bool) {
 	if len(procs) == 0 {
 		fmt.Println(successStyle.Render("✅ No dev processes found running."))
 		return
@@ -48,6 +49,10 @@ func PrintScanResults(procs []scanner.ProcessInfo) {
 			continue
 		}
 
+		sort.SliceStable(group, func(i, j int) bool {
+			return scanPriority(group[i], flagged) > scanPriority(group[j], flagged)
+		})
+
 		fmt.Println(headerStyle.Render(fmt.Sprintf("  %s %s (%d)", categoryIcon(cat), string(cat), len(group))))
 		fmt.Println()
 
@@ -57,9 +62,12 @@ func PrintScanResults(procs []scanner.ProcessInfo) {
 				portStr = fmt.Sprintf(":%d", p.Port)
 			}
 
-			orphanTag := ""
+			badges := ""
 			if p.IsOrphan {
-				orphanTag = errorStyle.Render(" [ORPHAN]")
+				badges += errorStyle.Render(" [ORPHAN]")
+			}
+			if issueType, ok := flagged[p.PID]; ok {
+				badges += issueBadge(issueType)
 			}
 
 			fmt.Printf("    %s %-20s PID %-7d CPU %5.1f%%  MEM %6.0f MB  Up %s%s%s\n",
@@ -70,7 +78,7 @@ func PrintScanResults(procs []scanner.ProcessInfo) {
 				p.MemoryMB,
 				scanner.FormatUptime(p.Uptime),
 				portStr,
-				orphanTag,
+				badges,
 			)
 
 			cmdPreview := scanner.TruncateCmdline(p.Cmdline, 60)
@@ -79,7 +87,11 @@ func PrintScanResults(procs []scanner.ProcessInfo) {
 		fmt.Println()
 	}
 
-	fmt.Printf("  %s %d dev processes found\n\n", dimStyle.Render("Total:"), len(procs))
+	fmt.Printf("  %s %d dev processes shown\n", dimStyle.Render("Total:"), len(procs))
+	if hiddenRuntimes > 0 && !includeRuntimes {
+		fmt.Printf("  %s %d generic runtime processes hidden (use %s to show them)\n", dimStyle.Render("Note:"), hiddenRuntimes, boldStyle.Render("scan --all"))
+	}
+	fmt.Println()
 }
 
 // PrintIssues displays detected problems.
@@ -111,6 +123,20 @@ func PrintIssues(issues []rules.Issue) {
 		}
 	}
 	fmt.Println()
+}
+
+// PrintCleanPlan shows what DevSweep intends to keep and kill for an issue.
+func PrintCleanPlan(issue rules.Issue, keep []scanner.ProcessInfo, kill []scanner.ProcessInfo, protectedSkipped int) {
+	fmt.Printf("  %s %s\n", boldStyle.Render("Plan:"), issue.Description)
+	if len(keep) > 0 {
+		fmt.Printf("    keep: %s\n", describeProcesses(keep))
+	}
+	if len(kill) > 0 {
+		fmt.Printf("    kill: %s\n", describeProcesses(kill))
+	}
+	if protectedSkipped > 0 {
+		fmt.Printf("    skip: %s\n", dimStyle.Render(fmt.Sprintf("%d protected process(es)", protectedSkipped)))
+	}
 }
 
 // PrintCleanResult displays the cleanup summary.
@@ -170,4 +196,43 @@ func confidenceBadge(c rules.Confidence) string {
 	default:
 		return ""
 	}
+}
+
+func issueBadge(t rules.IssueType) string {
+	switch t {
+	case rules.IssueDuplicate:
+		return warnStyle.Render(" [DUPLICATE]")
+	case rules.IssueStale:
+		return warnStyle.Render(" [STALE]")
+	case rules.IssueOrphan:
+		return errorStyle.Render(" [ISSUE]")
+	case rules.IssueCPUHog:
+		return errorStyle.Render(" [CPU]")
+	case rules.IssueMemoryBloat:
+		return errorStyle.Render(" [MEM]")
+	default:
+		return warnStyle.Render(" [ISSUE]")
+	}
+}
+
+func scanPriority(p scanner.ProcessInfo, flagged map[int32]rules.IssueType) float64 {
+	score := p.CPUPercent + (p.MemoryMB / 100.0)
+	if p.Port > 0 {
+		score += 20
+	}
+	if p.IsOrphan {
+		score += 1000
+	}
+	if _, ok := flagged[p.PID]; ok {
+		score += 500
+	}
+	return score
+}
+
+func describeProcesses(procs []scanner.ProcessInfo) string {
+	parts := make([]string, 0, len(procs))
+	for _, p := range procs {
+		parts = append(parts, fmt.Sprintf("%s (PID %d)", p.Tool, p.PID))
+	}
+	return strings.Join(parts, ", ")
 }

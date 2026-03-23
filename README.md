@@ -57,13 +57,15 @@ Every issue is labeled with a confidence level so auto-clean can stay conservati
 devsweep clean              # Interactive — asks before killing each group
 devsweep clean --cwd        # Only clean processes from the current project tree
 devsweep clean --auto       # Auto-clean, no prompts
-devsweep clean --dry-run    # Preview what would be killed (safe)
+devsweep clean --dry-run    # Preview exactly what would be kept/killed (safe)
 devsweep clean --dry-run --json
 ```
 
 For duplicates, DevSweep keeps the **newest** process and kills the rest. Cleanup now targets the selected process **and its descendants**, so leftover helper children are less likely to survive a cleanup pass.
 
 Use `--cwd` when you only want to see or clean processes belonging to the project tree you are currently in.
+
+`clean --dry-run` is the safest review path: it shows the issue, what DevSweep would keep, what it would kill, and what was skipped because it is protected.
 
 ### Kill a specific port
 
