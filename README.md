@@ -21,6 +21,7 @@ sudo ln -s /Users/tarek.k/Desktop/devsweep/devsweep /usr/local/bin/devsweep
 
 ```bash
 devsweep scan
+devsweep scan --json      # Machine-readable output
 ```
 
 Lists all dev processes on your machine, grouped and color-coded:
@@ -34,14 +35,18 @@ Lists all dev processes on your machine, grouped and color-coded:
 
 ```bash
 devsweep detect
+devsweep detect --json    # Machine-readable issues
 ```
 
 Flags issues automatically:
 - ⚠️ Duplicate dev servers on the same port
+- 🤖 Duplicate AI helpers with identical command lines
 - ⏰ Stale servers running 24+ hours with no CPU usage
 - 👻 Orphaned processes (parent died, child still running)
 - 🔥 CPU hogs (>50% for 5+ minutes)
 - 💾 Memory bloat (>500 MB)
+
+Every issue is labeled with a confidence level so auto-clean can stay conservative.
 
 ### Clean up
 
@@ -49,9 +54,10 @@ Flags issues automatically:
 devsweep clean              # Interactive — asks before killing each group
 devsweep clean --auto       # Auto-clean, no prompts
 devsweep clean --dry-run    # Preview what would be killed (safe)
+devsweep clean --dry-run --json
 ```
 
-For duplicates, DevSweep keeps the **newest** process and kills the rest. Always uses graceful shutdown (SIGTERM first, SIGKILL only if needed).
+For duplicates, DevSweep keeps the **newest** process and kills the rest. Cleanup now targets the selected process **and its descendants**, so leftover helper children are less likely to survive a cleanup pass.
 
 ### Kill a specific port
 
@@ -69,6 +75,8 @@ devsweep watch status      # Check if it's running
 ```
 
 The daemon runs in the background, records process snapshots to a local database, tracks parent-child relationships (so it knows *who* left orphans), and sends you a native macOS notification when problems are found.
+
+If `watch.auto_clean: true` is enabled, the daemon will only auto-clean **high-confidence** issues by default.
 
 **Auto-start on login (optional):**
 
@@ -103,9 +111,11 @@ protected:
 
 # Custom rules
 rules:
-  - match: "vite dev"
+  - match: "vite"
     max_duplicates: 1
     max_age: "12h"
+    cpu: "80%"
+    memory: "2GB"
   - match: "mcp-remote"
     max_duplicates: 1
 
@@ -120,6 +130,7 @@ Repo configs merge with your personal config — teams can share rules while you
 
 ## Safety
 
+- **Tree-aware cleanup** — kills the selected process and any descendants it spawned
 - **Graceful shutdown** — always SIGTERM first, waits 5 seconds, then SIGKILL
 - **Protected processes** — system processes are never touched
 - **Dry-run mode** — preview everything before killing

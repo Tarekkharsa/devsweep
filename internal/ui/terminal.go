@@ -89,11 +89,11 @@ func PrintIssues(issues []rules.Issue) {
 		return
 	}
 
-	fmt.Printf(warnStyle.Render(fmt.Sprintf("🔍 Found %d issues:\n\n", len(issues))))
+	fmt.Print(warnStyle.Render(fmt.Sprintf("🔍 Found %d issues:\n\n", len(issues))))
 
 	for i, issue := range issues {
 		icon := issueIcon(issue.Type)
-		fmt.Printf(" %s  %s\n", icon, boldStyle.Render(issue.Description))
+		fmt.Printf(" %s  %s %s\n", icon, boldStyle.Render(issue.Description), confidenceBadge(issue.Confidence))
 
 		pids := make([]string, len(issue.Processes))
 		for j, p := range issue.Processes {
@@ -156,5 +156,18 @@ func issueIcon(t rules.IssueType) string {
 		return errorStyle.Render("💾")
 	default:
 		return "❓"
+	}
+}
+
+func confidenceBadge(c rules.Confidence) string {
+	switch c {
+	case rules.ConfidenceHigh:
+		return successStyle.Render("[high confidence]")
+	case rules.ConfidenceMedium:
+		return warnStyle.Render("[medium confidence]")
+	case rules.ConfidenceLow:
+		return dimStyle.Render("[low confidence]")
+	default:
+		return ""
 	}
 }

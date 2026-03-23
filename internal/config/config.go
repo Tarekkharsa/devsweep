@@ -38,6 +38,19 @@ type ReportConfig struct {
 	RetentionDays int `yaml:"retention_days"`
 }
 
+type mergeOverlay struct {
+	Protected []ProtectedEntry `yaml:"protected,omitempty"`
+	Rules     []RuleOverride   `yaml:"rules,omitempty"`
+	Watch     struct {
+		Interval  *int  `yaml:"interval"`
+		Notify    *bool `yaml:"notify"`
+		AutoClean *bool `yaml:"auto_clean"`
+	} `yaml:"watch,omitempty"`
+	Report struct {
+		RetentionDays *int `yaml:"retention_days"`
+	} `yaml:"report,omitempty"`
+}
+
 // DefaultConfig returns the default configuration.
 func DefaultConfig() *Config {
 	return &Config{
@@ -89,6 +102,11 @@ func mergeFromFile(cfg *Config, path string) error {
 		return err
 	}
 
+	var meta mergeOverlay
+	if err := yaml.Unmarshal(data, &meta); err != nil {
+		return err
+	}
+
 	// Merge protected lists (append, don't replace)
 	cfg.Protected = append(cfg.Protected, overlay.Protected...)
 
@@ -107,18 +125,18 @@ func mergeFromFile(cfg *Config, path string) error {
 		}
 	}
 
-	// Override watch/report if specified
-	if overlay.Watch.Interval > 0 {
-		cfg.Watch.Interval = overlay.Watch.Interval
+	// Override watch/report values when explicitly set, including false.
+	if meta.Watch.Interval != nil && *meta.Watch.Interval > 0 {
+		cfg.Watch.Interval = *meta.Watch.Interval
 	}
-	if overlay.Watch.Notify {
-		cfg.Watch.Notify = overlay.Watch.Notify
+	if meta.Watch.Notify != nil {
+		cfg.Watch.Notify = *meta.Watch.Notify
 	}
-	if overlay.Watch.AutoClean {
-		cfg.Watch.AutoClean = overlay.Watch.AutoClean
+	if meta.Watch.AutoClean != nil {
+		cfg.Watch.AutoClean = *meta.Watch.AutoClean
 	}
-	if overlay.Report.RetentionDays > 0 {
-		cfg.Report.RetentionDays = overlay.Report.RetentionDays
+	if meta.Report.RetentionDays != nil && *meta.Report.RetentionDays > 0 {
+		cfg.Report.RetentionDays = *meta.Report.RetentionDays
 	}
 
 	return nil
