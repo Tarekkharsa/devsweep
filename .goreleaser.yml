@@ -1,0 +1,53 @@
+project_name: devsweep
+
+before:
+  hooks:
+    - go test ./...
+
+builds:
+  - id: devsweep
+    main: ./cmd/devsweep
+    binary: devsweep
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - id: default
+    formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- .Arch }}
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+
+brews:
+  - name: devsweep
+    repository:
+      owner: YOUR_GITHUB_USERNAME
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    homepage: "https://github.com/YOUR_GITHUB_USERNAME/devsweep"
+    description: "Smart process cleanup for developers"
+    license: "MIT"
+    install: |
+      bin.install "devsweep"
+    test: |
+      system "#{bin}/devsweep", "version"

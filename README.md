@@ -6,13 +6,24 @@ Smart process cleanup for developers. Detects, monitors, and cleans up runaway d
 
 ## Install
 
-```bash
-# Option 1: Run directly from the project
-cd ~/Desktop/devsweep
-./devsweep scan
+### From source
 
-# Option 2: Make it available everywhere (one-time setup)
-sudo ln -s /Users/tarek.k/Desktop/devsweep/devsweep /usr/local/bin/devsweep
+```bash
+git clone https://github.com/YOUR_GITHUB_USERNAME/devsweep.git
+cd devsweep
+go build -o devsweep ./cmd/devsweep/
+./devsweep scan
+```
+
+### From a GitHub release
+
+Download the archive for your platform from the GitHub Releases page, extract it, and move `devsweep` somewhere on your `PATH`.
+
+### Via Homebrew (optional, after tap publishing is set up)
+
+```bash
+brew tap YOUR_GITHUB_USERNAME/tap
+brew install devsweep
 ```
 
 ## Commands
