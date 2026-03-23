@@ -7,7 +7,7 @@ Downloads and runs the [DevSweep](https://github.com/TarekKharsa/devsweep) binar
 ## Install
 
 ```bash
-npm install -g @tarekkharsa/devsweep
+npm install -g @tarek_kharsa/devsweep
 ```
 
 ## Usage
