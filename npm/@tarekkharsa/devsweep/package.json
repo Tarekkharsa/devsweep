@@ -1,31 +1,14 @@
 {
-  "name": "@tarekkharsa/devsweep",
-  "version": "0.1.0",
+  "name": "@tarek_kharsa/devsweep",
+  "version": "0.1.6",
   "description": "Smart process cleanup CLI for developers - detects and cleans up runaway dev processes",
-  "keywords": [
-    "cli",
-    "process",
-    "cleanup",
-    "devtools",
-    "kill",
-    "developer-tools"
-  ],
+  "keywords": ["cli", "process", "cleanup", "devtools", "kill", "developer-tools"],
   "license": "MIT",
   "bin": {
-    "devsweep": "./bin/devsweep.js"
+    "devsweep": "./devsweep.sh"
   },
-  "scripts": {
-    "postinstall": "node ./bin/devsweep.js"
-  },
+  "preferGlobal": true,
   "engines": {
     "node": ">=14.0.0"
-  },
-  "os": [
-    "darwin",
-    "linux"
-  ],
-  "cpu": [
-    "x64",
-    "arm64"
-  ]
+  }
 }

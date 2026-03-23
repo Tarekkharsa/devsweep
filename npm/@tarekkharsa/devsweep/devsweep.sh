@@ -1,0 +1,3 @@
+#!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+exec node "$SCRIPT_DIR/devsweep.js" "$@"

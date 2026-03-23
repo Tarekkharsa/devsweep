@@ -27,7 +27,8 @@ function getArch() {
 function getBinaryUrl(version) {
   const platform = getPlatform();
   const arch = getArch();
-  return `https://github.com/${REPO}/releases/download/${version}/${BINARY_NAME}_${version}_${platform}_${arch}.tar.gz`;
+  const versionWithoutV = version.replace(/^v/, '');
+  return `https://github.com/${REPO}/releases/download/${version}/${BINARY_NAME}_${versionWithoutV}_${platform}_${arch}.tar.gz`;
 }
 
 function getLocalBinaryPath() {
