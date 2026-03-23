@@ -176,6 +176,11 @@ func detectStale(procs []scanner.ProcessInfo, cfg *config.Config) []Issue {
 
 // detectOrphans finds processes whose parent has died (PPID=1).
 func detectOrphans(procs []scanner.ProcessInfo) []Issue {
+	defaults := scanner.BuiltInRuleValues()
+	if !defaults.OrphanEnabled {
+		return nil
+	}
+
 	var issues []Issue
 
 	for _, p := range procs {
@@ -198,7 +203,7 @@ func detectOrphans(procs []scanner.ProcessInfo) []Issue {
 // detectCPUHogs finds processes using high CPU for extended periods.
 func detectCPUHogs(procs []scanner.ProcessInfo, cfg *config.Config) []Issue {
 	var issues []Issue
-	const defaultDuration = 5 * time.Minute
+	defaults := scanner.BuiltInRuleValues()
 
 	for _, p := range procs {
 		if p.Category == scanner.CategoryProtected {
@@ -206,7 +211,7 @@ func detectCPUHogs(procs []scanner.ProcessInfo, cfg *config.Config) []Issue {
 		}
 
 		cpuThreshold := cpuThresholdForProcess(p, cfg)
-		if p.CPUPercent > cpuThreshold && p.Uptime > defaultDuration {
+		if p.CPUPercent > cpuThreshold && p.Uptime > defaults.CPUHogDuration {
 			issues = append(issues, Issue{
 				Type:        IssueCPUHog,
 				Description: fmt.Sprintf("%s using %.0f%% CPU for %s", p.Tool, p.CPUPercent, scanner.FormatUptime(p.Uptime)),
@@ -268,7 +273,7 @@ func confidenceRank(c Confidence) int {
 }
 
 func maxDuplicatesForGroup(group []scanner.ProcessInfo, cfg *config.Config) int {
-	maxDuplicates := 1
+	maxDuplicates := scanner.BuiltInRuleValues().MaxDuplicates
 	for _, p := range group {
 		if override, ok := matchingOverride(p, cfg); ok && override.MaxDuplicates != nil && *override.MaxDuplicates > 0 {
 			if *override.MaxDuplicates < maxDuplicates || maxDuplicates == 1 {
@@ -283,7 +288,7 @@ func maxDuplicatesForGroup(group []scanner.ProcessInfo, cfg *config.Config) int 
 }
 
 func maxAgeForProcess(p scanner.ProcessInfo, cfg *config.Config) time.Duration {
-	const defaultMaxAge = 24 * time.Hour
+	defaultMaxAge := scanner.BuiltInRuleValues().StaleMaxAge
 	if override, ok := matchingOverride(p, cfg); ok {
 		if d, ok := parseDuration(override.MaxAge); ok {
 			return d
@@ -293,7 +298,7 @@ func maxAgeForProcess(p scanner.ProcessInfo, cfg *config.Config) time.Duration {
 }
 
 func cpuThresholdForProcess(p scanner.ProcessInfo, cfg *config.Config) float64 {
-	const defaultCPU = 50.0
+	defaultCPU := scanner.BuiltInRuleValues().CPUHogPercent
 	if override, ok := matchingOverride(p, cfg); ok {
 		if v, ok := parsePercent(override.CPU); ok {
 			return v
@@ -303,9 +308,10 @@ func cpuThresholdForProcess(p scanner.ProcessInfo, cfg *config.Config) float64 {
 }
 
 func memoryThresholdForProcess(p scanner.ProcessInfo, cfg *config.Config) float64 {
-	threshold := 500.0
+	defaults := scanner.BuiltInRuleValues()
+	threshold := defaults.MemoryBloatMB
 	if p.Category == scanner.CategoryDevServer {
-		threshold = 1500.0
+		threshold = defaults.DevServerMemoryMB
 	}
 	if override, ok := matchingOverride(p, cfg); ok {
 		if v, ok := parseMemoryMB(override.Memory); ok {

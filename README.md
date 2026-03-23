@@ -133,6 +133,8 @@ watch:
 
 Repo configs merge with your personal config — teams can share rules while you keep your own protected list.
 
+Built-in signatures and default thresholds are sourced from `rules/default.yml` (with an embedded fallback in the compiled binary).
+
 ## Safety
 
 - **Tree-aware cleanup** — kills the selected process and any descendants it spawned
