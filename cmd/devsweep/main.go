@@ -80,11 +80,15 @@ func printUsage() {
 	fmt.Println("  Usage: devsweep <command> [flags]")
 	fmt.Println()
 	fmt.Println("  Commands:")
-	fmt.Println("    scan                    Show all dev processes, grouped & colored")
+	fmt.Println("    scan                    Show active dev processes (generic runtimes hidden by default)")
+	fmt.Println("    scan --all              Include generic runtime processes")
+	fmt.Println("    scan --cwd              Limit results to the current working tree")
 	fmt.Println("    scan --json             Show scan results as JSON")
 	fmt.Println("    detect                  Show problems only (duplicates, stale, orphans)")
+	fmt.Println("    detect --cwd            Limit results to the current working tree")
 	fmt.Println("    detect --json           Show detected issues as JSON")
 	fmt.Println("    clean                   Interactive cleanup with confirmation")
+	fmt.Println("    clean --cwd             Only clean processes from the current working tree")
 	fmt.Println("    clean --auto            Auto-clean using rules (no prompts)")
 	fmt.Println("    clean --dry-run         Show what would be killed, don't kill")
 	fmt.Println("    clean --dry-run --json  Show cleanup plan as JSON")
@@ -104,19 +108,38 @@ func printUsage() {
 }
 
 func cmdScan() {
+	cfg, err := config.Load()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)
+		os.Exit(1)
+	}
+
 	procs, err := scanner.ScanAll()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error scanning processes: %v\n", err)
 		os.Exit(1)
 	}
+	procs = maybeFilterByCWD(procs)
 
 	if hasFlag("--json") {
 		printJSON(procs)
 		return
 	}
 
+	issues := rules.DetectAllWithConfig(procs, cfg)
+	flagged := make(map[int32]rules.IssueType)
+	for _, issue := range issues {
+		for _, p := range issue.Processes {
+			if _, exists := flagged[p.PID]; !exists {
+				flagged[p.PID] = issue.Type
+			}
+		}
+	}
+
+	filtered, hiddenRuntimes := scanner.FilterForScanDisplay(procs, issuePIDSet(flagged), hasFlag("--all"))
+
 	ui.PrintBanner()
-	ui.PrintScanResults(procs)
+	ui.PrintScanResults(filtered, flagged, hiddenRuntimes, hasFlag("--all"))
 }
 
 func cmdDetect() {
@@ -131,6 +154,7 @@ func cmdDetect() {
 		fmt.Fprintf(os.Stderr, "Error scanning processes: %v\n", err)
 		os.Exit(1)
 	}
+	procs = maybeFilterByCWD(procs)
 	issues := rules.DetectAllWithConfig(procs, cfg)
 
 	if hasFlag("--json") {
@@ -168,6 +192,7 @@ func cmdClean() {
 		fmt.Fprintf(os.Stderr, "Error scanning processes: %v\n", err)
 		os.Exit(1)
 	}
+	procs = maybeFilterByCWD(procs)
 
 	issues := rules.DetectAllWithConfig(procs, cfg)
 	result := cleanOutput{
@@ -560,6 +585,25 @@ func positionalArgAfterCommand() string {
 		return arg
 	}
 	return ""
+}
+
+func issuePIDSet(flagged map[int32]rules.IssueType) map[int32]bool {
+	set := make(map[int32]bool, len(flagged))
+	for pid := range flagged {
+		set[pid] = true
+	}
+	return set
+}
+
+func maybeFilterByCWD(procs []scanner.ProcessInfo) []scanner.ProcessInfo {
+	if !hasFlag("--cwd") {
+		return procs
+	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		return procs
+	}
+	return scanner.FilterByWorkingDir(procs, cwd)
 }
 
 func filterBlameStats(stats []store.BlameStat, filter string) []store.BlameStat {

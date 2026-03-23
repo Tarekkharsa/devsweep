@@ -20,21 +20,24 @@ sudo ln -s /Users/tarek.k/Desktop/devsweep/devsweep /usr/local/bin/devsweep
 ### See what's running
 
 ```bash
-devsweep scan
+devsweep scan             # Generic runtimes hidden by default
+devsweep scan --all       # Include generic runtimes like plain Node/Python
+devsweep scan --cwd       # Only show processes related to the current project tree
 devsweep scan --json      # Machine-readable output
 ```
 
-Lists all dev processes on your machine, grouped and color-coded:
+Lists dev processes on your machine, grouped and color-coded:
 - 🖥 **Dev Servers** — Vite, Next.js, Webpack, Remix, etc.
 - 🤖 **AI Agents** — MCP servers, Claude, Copilot, OpenCode
 - 📦 **Package Managers** — npm, pnpm, yarn, bun
-- ⚙️ **Runtimes** — Node.js, Deno, Bun, Python
+- ⚙️ **Runtimes** — Node.js, Deno, Bun, Python (shown with `scan --all`, or kept visible when flagged as suspicious)
 - 🛡 **Protected** — System processes (never touched)
 
 ### Find problems
 
 ```bash
 devsweep detect
+devsweep detect --cwd     # Only inspect the current project tree
 devsweep detect --json    # Machine-readable issues
 ```
 
@@ -52,12 +55,15 @@ Every issue is labeled with a confidence level so auto-clean can stay conservati
 
 ```bash
 devsweep clean              # Interactive — asks before killing each group
+devsweep clean --cwd        # Only clean processes from the current project tree
 devsweep clean --auto       # Auto-clean, no prompts
 devsweep clean --dry-run    # Preview what would be killed (safe)
 devsweep clean --dry-run --json
 ```
 
 For duplicates, DevSweep keeps the **newest** process and kills the rest. Cleanup now targets the selected process **and its descendants**, so leftover helper children are less likely to survive a cleanup pass.
+
+Use `--cwd` when you only want to see or clean processes belonging to the project tree you are currently in.
 
 ### Kill a specific port
 
