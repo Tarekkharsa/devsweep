@@ -41,10 +41,10 @@ changelog:
 brews:
   - name: devsweep
     repository:
-      owner: YOUR_GITHUB_USERNAME
+      owner: TarekKharsa
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    homepage: "https://github.com/YOUR_GITHUB_USERNAME/devsweep"
+    homepage: "https://github.com/TarekKharsa/devsweep"
     description: "Smart process cleanup for developers"
     license: "MIT"
     install: |
