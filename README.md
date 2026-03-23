@@ -1,5 +1,8 @@
 # 🧹 DevSweep
 
+[![npm](https://img.shields.io/npm/v/@tarek_kharsa/devsweep)](https://www.npmjs.com/package/@tarek_kharsa/devsweep)
+[![GitHub release](https://img.shields.io/github/v/release/TarekKharsa/devsweep)](https://github.com/TarekKharsa/devsweep/releases)
+
 Smart process cleanup for developers. Detects, monitors, and cleans up runaway dev processes — Vite servers, MCP agents, orphaned Node workers, and all the chaos AI tools leave behind.
 
 **Single binary. Zero dependencies. Works immediately.**
