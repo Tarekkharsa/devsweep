@@ -6,23 +6,41 @@ Smart process cleanup for developers. Detects, monitors, and cleans up runaway d
 
 ## Install
 
+### Via npm (recommended)
+
+```bash
+npm install -g @tarek_kharsa/devsweep
+```
+
+Or use directly without installing:
+
+```bash
+npx @tarek_kharsa/devsweep scan
+```
+
+### From a GitHub release
+
+Download the archive for your platform from the [GitHub Releases](https://github.com/TarekKharsa/devsweep/releases) page, extract it, and move `devsweep` somewhere on your `PATH`.
+
+```bash
+# Example for macOS arm64
+curl -L https://github.com/TarekKharsa/devsweep/releases/latest/download/devsweep_0.1.0_darwin_arm64.tar.gz | tar xz
+./devsweep scan
+```
+
 ### From source
 
 ```bash
-git clone https://github.com/YOUR_GITHUB_USERNAME/devsweep.git
+git clone https://github.com/TarekKharsa/devsweep.git
 cd devsweep
 go build -o devsweep ./cmd/devsweep/
 ./devsweep scan
 ```
 
-### From a GitHub release
-
-Download the archive for your platform from the GitHub Releases page, extract it, and move `devsweep` somewhere on your `PATH`.
-
-### Via Homebrew (optional, after tap publishing is set up)
+### Via Homebrew (coming soon)
 
 ```bash
-brew tap YOUR_GITHUB_USERNAME/tap
+brew tap TarekKharsa/tap
 brew install devsweep
 ```
 
@@ -58,7 +76,7 @@ Flags issues automatically:
 - ⏰ Stale servers running 24+ hours with no CPU usage
 - 👻 Orphaned processes (parent died, child still running)
 - 🔥 CPU hogs (>50% for 5+ minutes)
-- 💾 Memory bloat (>500 MB)
+- 💾 Memory bloat (>500 MB for idle processes)
 
 Every issue is labeled with a confidence level so auto-clean can stay conservative.
 
@@ -162,6 +180,7 @@ Built-in signatures and default thresholds are sourced from `rules/default.yml` 
 - **Dry-run mode** — preview everything before killing
 - **No sudo required** — works entirely in user space
 - **Local only** — all data stays on your machine, nothing is sent anywhere
+- **Session-aware** — ignores processes in active CLI sessions (e.g., subagents from opencode)
 
 ## How it works
 
@@ -191,7 +210,7 @@ Data is retained for 30 days by default (configurable via `report.retention_days
 Requires Go 1.21+:
 
 ```bash
-git clone https://github.com/tarek-k-devs/devsweep.git
+git clone https://github.com/TarekKharsa/devsweep.git
 cd devsweep
 go build -o devsweep ./cmd/devsweep/
 ./devsweep scan
