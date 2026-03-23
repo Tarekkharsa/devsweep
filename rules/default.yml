@@ -1,0 +1,84 @@
+categories:
+  dev_servers:
+    binary:
+      - vite
+      - next-server
+      - webpack-dev-server
+      - remix-serve
+      - turbopack
+      - nuxt
+      - astro
+      - gatsby
+    cmdline:
+      - "vite dev"
+      - "vite serve"
+      - "vite preview"
+      - "next dev"
+      - "next start"
+      - "webpack serve"
+      - "webpack-dev-server"
+      - "remix dev"
+      - "nuxt dev"
+      - "astro dev"
+      - "gatsby develop"
+      - "turbopack"
+
+  ai_agents:
+    binary:
+      - mcp-remote
+      - mcp-server
+      - codex
+      - claude
+      - copilot
+    cmdline:
+      - mcp-remote
+      - mcp-server
+      - claude
+      - copilot
+      - opencode
+      - cursor-agent
+      - pi-coding-agent
+
+  package_managers:
+    binary:
+      - npm
+      - pnpm
+      - yarn
+      - bun
+    cmdline:
+      - "npm install"
+      - "npm ci"
+      - "pnpm install"
+      - "yarn install"
+      - "bun install"
+
+  runtimes:
+    binary:
+      - node
+      - deno
+      - bun
+      - python
+      - python3
+      - ruby
+      - java
+
+  protected:
+    binary:
+      - "ninjarmm*"
+      - "jamf*"
+      - launchd
+      - kernel_task
+      - WindowServer
+
+rules:
+  stale:
+    max_age: "24h"
+  duplicates:
+    max_duplicates: 1
+  cpu_hog:
+    cpu_percent: 50
+    duration: "5m"
+  memory_bloat:
+    max_memory: "500MB"
+  orphan:
+    enabled: true
