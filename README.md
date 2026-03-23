@@ -90,12 +90,17 @@ devsweep watch uninstall   # Remove it
 ```bash
 devsweep report                      # Stats from the last 7 days
 devsweep report --export opencode    # Generate a Markdown bug report for a tool
+devsweep blame                       # Which tools leave the most clutter
+devsweep blame opencode              # Focus on one tool
+devsweep blame --json                # Machine-readable blame stats
 ```
 
 Shows:
 - How many processes were killed and RAM reclaimed
 - Port conflicts over time
 - Orphan counts grouped by which tool left them (e.g., "OpenCode left 23 orphans")
+
+The `blame` command merges orphan and cleanup history into a single table so you can quickly see which tools are the repeat offenders.
 
 The `--export` flag generates a ready-to-paste GitHub issue so tool maintainers get actionable bug reports instead of vague complaints.
 
