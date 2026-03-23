@@ -1,6 +1,6 @@
 {
   "name": "@tarek_kharsa/devsweep",
-  "version": "0.1.8",
+  "version": "1.0.0",
   "description": "Smart process cleanup CLI for developers - detects and cleans up runaway dev processes",
   "keywords": ["cli", "process", "cleanup", "devtools", "kill", "developer-tools"],
   "license": "MIT",
